@@ -12,7 +12,9 @@ print("API_KEY loaded?", API_KEY is not None)
 print("API_KEY length:", 0 if API_KEY is None else len(API_KEY))
 
 
+Base.metadata.drop_all(bind=engine)
 Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
 
 def get_db():
