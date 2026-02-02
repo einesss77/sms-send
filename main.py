@@ -23,8 +23,11 @@ def get_db():
         db.close()
 
 def authorize(x_api_key: str = Header(...)):
+    print("RECEIVED:", x_api_key)
+    print("EXPECTED:", API_KEY)
     if x_api_key != API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
+
 
 @app.post("/sms", dependencies=[Depends(authorize)])
 def create_sms(sms: SMSCreate, db: Session = Depends(get_db)):
