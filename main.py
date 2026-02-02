@@ -15,6 +15,7 @@ print("API_KEY length:", 0 if API_KEY is None else len(API_KEY))
 Base.metadata.create_all(bind=engine)
 
 
+
 app = FastAPI()
 
 def get_db():
@@ -107,3 +108,6 @@ app.mount("/web", StaticFiles(directory="web"), name="web")
 @app.get("/dashboard")
 def dashboard():
     return FileResponse("web/index.html")
+@app.get("/health")
+def health():
+    return {"ok": True}
