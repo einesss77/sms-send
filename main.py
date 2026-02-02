@@ -98,3 +98,12 @@ def retry_sms(sms_id: str, db: Session = Depends(get_db)):
     sms.fail_reason = None
     db.commit()
     return {"status": "queued"}
+
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/web", StaticFiles(directory="web"), name="web")
+
+@app.get("/dashboard")
+def dashboard():
+    return FileResponse("web/index.html")
