@@ -16,7 +16,6 @@ const tbody = el("tbody");
 const subline = el("subline");
 
 const LS_KEY = "sms_dashboard_authed";
-const LS_API = "sms_dashboard_api_url";
 
 function setSub(text) { subline.textContent = text; }
 
@@ -26,14 +25,6 @@ function isAuthed() {
 
 function setAuthed(ok) {
     localStorage.setItem(LS_KEY, ok ? "1" : "0");
-}
-
-function getApiUrl() {
-    return (localStorage.getItem(LS_API) || "http://127.0.0.1:8000").trim();
-}
-
-function setApiUrl(v) {
-    localStorage.setItem(LS_API, v.trim());
 }
 
 function escapeHtml(s) {
@@ -51,12 +42,30 @@ function fmtDate(d) {
         const dt = new Date(d);
         if (Number.isNaN(dt.getTime())) return "-";
         return dt.toLocaleString();
-    } catch { return "-"; }
+    } catch {
+        return "-";
+    }
+}
+
+// --- NEW: config ---
+let API_BASE = "";
+
+async function loadConfig() {
+    // API_BASE_URL vient du .env via FastAPI (/config)
+    const res = await fetch("/config");
+    if (!res.ok) throw new Error(`Config error ${res.status}`);
+
+    const cfg = await res.json();
+    if (!cfg.api_base_url) throw new Error("API_BASE_URL manquant dans l'environnement (Render).");
+
+    API_BASE = String(cfg.api_base_url).trim().replace(/\/+$/, "");
+    apiUrlInput.value = API_BASE; // affichage info (read-only conseillé côté HTML)
 }
 
 async function apiFetch(path, options = {}) {
-    const base = apiUrlInput.value.trim().replace(/\/+$/, "");
-    const url = `${base}${path}`;
+    if (!API_BASE) await loadConfig();
+    const url = `${API_BASE}${path}`;
+
     const res = await fetch(url, options);
     if (!res.ok) {
         const txt = await res.text().catch(() => "");
@@ -172,21 +181,23 @@ btnRefresh.addEventListener("click", loadSMS);
 statusSelect.addEventListener("change", loadSMS);
 limitSelect.addEventListener("change", loadSMS);
 qInput.addEventListener("input", () => {
-    // debounce léger
     window.clearTimeout(window.__qT);
     window.__qT = window.setTimeout(loadSMS, 250);
 });
 
-function boot() {
-    apiUrlInput.value = getApiUrl();
-    apiUrlInput.addEventListener("change", () => {
-        setApiUrl(apiUrlInput.value);
-        loadSMS();
-    });
-    loadSMS().catch((e) => {
+async function boot() {
+    try {
+        // charge l'URL depuis /config (API_BASE_URL dans .env)
+        await loadConfig();
+
+        // Optionnel: rendre le champ non modifiable côté JS (ou mets readonly dans le HTML)
+        apiUrlInput.setAttribute("readonly", "readonly");
+
+        await loadSMS();
+    } catch (e) {
         tbody.innerHTML = `<tr><td colspan="6" class="mono">Erreur: ${escapeHtml(e.message)}</td></tr>`;
         setSub("Erreur");
-    });
+    }
 }
 
 // Auto

@@ -1,13 +1,15 @@
+import os
+from datetime import datetime
+
 from fastapi import FastAPI, Depends, HTTPException, Header, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
+
 from database import SessionLocal, engine
 from models import SMS, Base
 from schemas import SMSCreate
-import os
-from datetime import datetime
 
 # =========================
 # APP
@@ -53,6 +55,15 @@ def health():
     return {"ok": True}
 
 # =========================
+# CONFIG (for dashboard JS)
+# =========================
+@app.get("/config")
+def get_config():
+    return {
+        "api_base_url": os.getenv("API_BASE_URL")
+    }
+
+# =========================
 # SMS API
 # =========================
 @app.post("/sms", dependencies=[Depends(authorize)])
@@ -68,7 +79,7 @@ def list_sms(
         status: str | None = Query(default=None),  # PENDING / SENT / FAILED
         to: str | None = Query(default=None),
         limit: int = Query(default=200, ge=1, le=2000),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
 ):
     q = db.query(SMS)
     if status:
@@ -98,7 +109,7 @@ def mark_sms_sent(sms_id: str, db: Session = Depends(get_db)):
 def mark_sms_failed(
         sms_id: str,
         reason: str = Query(default="send_error"),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
 ):
     sms = db.query(SMS).filter(SMS.id == sms_id).first()
     if not sms:
