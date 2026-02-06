@@ -207,3 +207,4 @@ if (isAuthed()) {
 } else {
     setSub("Accès protégé");
 }
+console.log("API_BASE =", API_BASE);
